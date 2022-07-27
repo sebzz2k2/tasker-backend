@@ -4,7 +4,9 @@ const addTodo = async (req, res) => {
   await Todo.create({
     name: req.body.name,
     completed: false,
-  });
+  })
+    .then((response) => res.json({ response }))
+    .catch((err) => console.log(err));
 };
 
 const getAllTodo = async (req, res) => {
