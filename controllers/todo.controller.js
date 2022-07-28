@@ -1,27 +1,67 @@
 const Todo = require("../models/todo.model");
+const User = require("../models/user.model");
 
-const addTodo = async (req, res) => {
+const asyncHandler = require("express-async-handler");
+
+const addTodo = asyncHandler(async (req, res) => {
   await Todo.create({
+    user: req.user.id,
     name: req.body.name,
     completed: false,
   })
-    .then((response) => res.json({ response }))
-    .catch((err) => console.log(err));
-};
+    .then((response) => res.status(200).json({ response }))
+    .catch(() => {
+      res.status(400);
+      throw new Error("Failed to add todo");
+    });
+});
 
-const getAllTodo = async (req, res) => {
-  const todo = await Todo.find({});
+const getAllTodo = asyncHandler(async (req, res) => {
+  const todo = await Todo.find({ user: req.user.id });
+  if (!todo) {
+    user.status(401);
+    throw new Error("Not updated");
+  }
   res.json({ todo });
-};
-const deleteTodo = async (req, res) => {
+});
+
+const deleteTodo = asyncHandler(async (req, res) => {
+  const currentTodo = await Todo.findById(req.params.id);
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    res.status(401);
+    throw new Error("User not found");
+  }
+
+  if (currentTodo.user.toString() !== user.id) {
+    res.status(401);
+    throw new Error("User not authorized");
+  }
   Todo.deleteOne({
     _id: req.params.id,
   })
     .then((response) => res.json({ response }))
-    .catch((err) => console.log(err));
-};
+    .catch(() => {
+      user.status(401);
+      throw new Error("Not Deleted");
+    });
+});
 
-const toggleTodo = async (req, res) => {
+const toggleTodo = asyncHandler(async (req, res) => {
+  const currentTodo = await Todo.findById(req.params.id);
+  console.log(req.body.completed);
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    res.status(401);
+    throw new Error("User not found");
+  }
+
+  if (currentTodo.user.toString() !== user.id) {
+    res.status(401);
+    throw new Error("User not authorized");
+  }
   await Todo.findOneAndUpdate(
     { _id: req.params.id },
     {
@@ -29,10 +69,27 @@ const toggleTodo = async (req, res) => {
         completed: req.body.completed,
       },
     }
-  ).then((response) => res.json({ response }));
-};
+  )
+    .then(() => res.status(200))
+    .catch(() => {
+      user.status(401);
+      throw new Error("Not updated");
+    });
+});
 
-const editTodo = async (req, res) => {
+const editTodo = asyncHandler(async (req, res) => {
+  const currentTodo = await Todo.findById(req.params.id);
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    res.status(401);
+    throw new Error("User not found");
+  }
+
+  if (currentTodo.user.toString() !== user.id) {
+    res.status(401);
+    throw new Error("User not authorized");
+  }
   await Todo.findOneAndUpdate(
     { _id: req.params.id },
     {
@@ -40,8 +97,13 @@ const editTodo = async (req, res) => {
         name: req.body.name,
       },
     }
-  ).then((response) => res.json({ response }));
-};
+  )
+    .then(() => res.status(200))
+    .catch(() => {
+      user.status(401);
+      throw new Error("Not updated");
+    });
+});
 
 module.exports = {
   editTodo,
