@@ -13,6 +13,8 @@ const EditUser = asyncHandler(async (req, res) => {
   const { userName, newPassword, id } = req.body;
 
   const userExists = await User.findOne({ _id: id });
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
 
   if (userExists) {
     await User.findOneAndUpdate(
@@ -20,13 +22,14 @@ const EditUser = asyncHandler(async (req, res) => {
       {
         $set: {
           userName,
-          password: newPassword,
+          password: hashedPassword,
         },
       }
     )
       .then(() => res.status(200).json({ success: "success" }))
-      .catch(() => {
+      .catch((err) => {
         res.status(401);
+        console.log(err);
         throw new Error("Not updated");
       });
   }
