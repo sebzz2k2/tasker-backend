@@ -9,6 +9,29 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
 };
 
+const EditUser = asyncHandler(async (req, res) => {
+  const { userName, newPassword, id } = req.body;
+
+  const userExists = await User.findOne({ _id: id });
+
+  if (userExists) {
+    await User.findOneAndUpdate(
+      { _id: req.body.id },
+      {
+        $set: {
+          userName,
+          password: newPassword,
+        },
+      }
+    )
+      .then(() => res.status(200).json({ success: "success" }))
+      .catch(() => {
+        res.status(401);
+        throw new Error("Not updated");
+      });
+  }
+});
+
 const RegisterUser = asyncHandler(async (req, res) => {
   const { userName, password } = req.body;
 
@@ -79,4 +102,5 @@ module.exports = {
   GetUser,
   RegisterUser,
   LoginUser,
+  EditUser,
 };
